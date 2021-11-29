@@ -4,6 +4,7 @@ import random
 import os
 import sys
 from datetime import date, timedelta
+import datetime
 from termcolor import colored
 import json
 from pathlib import Path
@@ -110,7 +111,7 @@ def reflect(entry, filename, todo_path):
     printC("What could've been better? ", "yellow", end=" ")
     reflectObj["improve"] = input()
 
-    printC("Up for a random question? (y/n) ", "green")
+    printC(" Up for a random question? (y/n) ", "green")
     if input() == "y":
         qs = Path.read_text(todo_path / ".questions").split("\n")[:-1]
         selected = random.randrange(0, len(qs))
@@ -133,12 +134,12 @@ if __name__ == "__main__":
     parser.add_argument("-r", '--reflect', action="store_true")
     args = parser.parse_args()
 
-    today = date.today()
+    today = datetime.datetime.now() - timedelta(hours=1)
     today_str = today.strftime("%y-%m-%d")
     filename = todo_path / (today_str + ".json" )
 
     if not os.path.isfile(filename):
-        yesterday = (today - timedelta(days=1)).strftime("%y-%m-%d")
+        yesterday = (datetime.datetime.now() - timedelta(days=1)).strftime("%y-%m-%d")
         yesterday_file = todo_path / (yesterday + ".json" )
         if os.path.isfile(yesterday_file):
             print("Reminder from yesterday: ")
@@ -157,11 +158,15 @@ if __name__ == "__main__":
             done = []
             for i, item in enumerate(entry["Do"]):
                 if i in args.commit:
-                    done.append(item)
+                    if item == "reflect":
+                        printC(" You cannot commit 'reflect'", "red")
+                        rest_do.append(item)
+                    else:
+                        done.append(item)
                 else:
                     rest_do.append(item)
             entry['Do'] = rest_do
-            entry['Done'] = done
+            entry['Done'] = entry['Done'] + done
             write_json(filename, entry)
         elif args.edit:
             os.system(f"vim {filename}")
